@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.8" tiledversion="1.8.2" orientation="orthogonal" renderorder="right-down" width="4" height="4" tilewidth="10" tileheight="10" infinite="0" nextlayerid="8" nextobjectid="19">
+ <tileset firstgid="1" source="test.tsx"/>
+ <layer id="2" name="bg" width="4" height="4">
+  <data encoding="csv">
+4,4,0,0,
+2,2,2,0,
+2,2,2,0,
+4,4,0,0
+</data>
+ </layer>
+ <layer id="1" name="Tile Layer 1" width="4" height="4" opacity="0.9" tintcolor="#64aa0000" offsetx="0.8" offsety="0" parallaxy="2.5">
+  <properties>
+   <property name="collidable" type="bool" value="true"/>
+  </properties>
+  <data encoding="csv">
+0,0,0,0,
+0,0,0,0,
+1,1,1,1,
+1,1,1,1
+</data>
+ </layer>
+ <objectgroup id="3" name="obj1">
+  <properties>
+   <property name="obj_group" type="bool" value="true"/>
+  </properties>
+  <object id="2" template="test.tx" x="4.25998" y="10.0772"/>
+  <object id="3" name="barry" x="28.6511" y="10.658" width="7.71136" height="12.7269" visible="0"/>
+  <object id="4" x="7.58597" y="6.33209">
+   <properties>
+    <property name="open" type="bool" value="true"/>
+   </properties>
+   <polyline points="0,0 15.36,-3.69894 4.70205,13.0403"/>
+  </object>
+  <object id="5" x="9.15332" y="33.7294">
+   <properties>
+    <property name="closed" type="bool" value="true"/>
+   </properties>
+   <polygon points="0,0 0.940409,-7.20981 9.90565,-1.56735"/>
+  </object>
+  <object id="16" name="dd" type="dd" x="34.5625" y="16.6875">
+   <point/>
+  </object>
+  <object id="17" name="dd" type="asd" x="29.375" y="19.3125" width="8.5625" height="9" rotation="10">
+   <ellipse/>
+  </object>
+  <object id="18" x="-4.125" y="14.1875" width="83" height="19">
+   <text fontfamily="MS Sans Serif" pixelsize="29" wrap="1" color="#626262" bold="1" italic="1" halign="justify" valign="center">Hello World</text>
+  </object>
+ </objectgroup>
+ <imagelayer id="4" name="img" offsetx="19.247" offsety="-10.3445" parallaxx="2.07" repeaty="1">
+  <image source="test-tileset.png" width="32" height="32"/>
+  <properties>
+   <property name="img" type="bool" value="false"/>
+  </properties>
+ </imagelayer>
+ <objectgroup color="#0a55ff08" draworder="index" id="5" name="obj2s" locked="1" opacity="0.5" tintcolor="#ff730e" offsetx="5.05" offsety="0" parallaxx="1.1">
+  <properties>
+   <property name="collidable" type="bool" value="true"/>
+  </properties>
+  <object id="8" x="10" y="20" width="20"/>
+  <object id="9" x="0" y="0" width="20" height="10">
+   <properties>
+    <property name="test_coll" type="bool" value="true"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

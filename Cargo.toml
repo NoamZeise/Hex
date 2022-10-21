@@ -1,0 +1,15 @@
+[package]
+name = "GudevJam12"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quick-xml = "0.24.0"
+tiled = { path = "include/tiled/" }
+geometry = { path = "include/geometry/" }
+
+[dependencies.sdl2]
+version = "0.35"
+features = ["ttf", "image", "mixer"]

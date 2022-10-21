@@ -1,0 +1,5 @@
+/target
+include/geometry/target
+include/tiled/target
+*.lock
+*.dll

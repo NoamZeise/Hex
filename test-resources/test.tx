@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object type="asd" width="15.1719" height="18.3066" rotation="343.734">
+  <properties>
+   <property name="num" type="int" value="5"/>
+   <property name="test" type="bool" value="true"/>
+  </properties>
+ </object>
+</template>
