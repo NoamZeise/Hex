@@ -8,7 +8,7 @@ use sdl2::render::Canvas;
 
 use geometry::Vec2;
 use GudevJam12::{TextureManager, FontManager, map, camera::Camera};
-use GudevJam12::input::Typing;
+use GudevJam12::input::Input;
 
 use std::time::Instant;
 use std::path::Path;
@@ -20,12 +20,12 @@ pub fn main() -> Result<(), String> {
 
     let mut cam = Camera::new(
         geometry::Rect::new(0.0, 0.0, 240.0, 160.0),
-        geometry::Vec2::new(240.0, 160.0)
+        geometry::Vec2::new(240.0 * 5.0, 160.0 * 5.0)
     );
     
     let window = video_subsystem
         .window(
-            "SDL2-Rust",
+            "Deeper and Deeper",
             cam.get_window_size().x as u32,
             cam.get_window_size().y as u32
         )
@@ -47,12 +47,15 @@ pub fn main() -> Result<(), String> {
     let mono_font = font_manager.load_font(Path::new("textures/FiraCode-Regular.ttf"))?;
 
     let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
+
+    let test = GudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/test.png"))?);
     
-    canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
-    
+    canvas.set_blend_mode(sdl2::render::BlendMode::Mul);
+
+    let mut palette = Color::RGBA(0, 0, 0, 0);
 
     let mut event_pump = sdl_context.event_pump()?;
-    let mut typing = Typing::new();
+    let mut input = Input::new();
     let mut prev_frame : f64 = 0.0;
     'running: loop {
         let start_time = Instant::now();
@@ -61,38 +64,57 @@ pub fn main() -> Result<(), String> {
                 Event::Quit { .. } | Event::KeyDown {  keycode: Some(Keycode::Escape), ..} => break 'running,
                 _ => { }
             }
-            typing.handle_event(&event);
+            input.handle_event(&event);
             handle_event(&event, &mut canvas, &mut cam)?;
         }
         
         canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.clear();
         
-        map.draw(&mut cam);
+        //map.draw(&mut cam);
+        
+        font_manager.draw(&mut canvas, &mono_font, "deeper and deeper", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
 
-        font_manager.draw(&mut canvas, &mono_font, "hello sdl2", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
+        cam.add_cam_space(&test);
         
         for d in cam.drain_draws() {
             texture_manager.draw(&mut canvas, d)?;
         }
+
+        canvas.set_draw_color(palette);
+        canvas.fill_rect(sdl2::rect::Rect::new(0, 0, cam.get_window_size().x as u32, cam.get_window_size().y as u32))?;
       
+        
         canvas.present();
         
         let mut pos = cam.get_offset();
         const SPEED : f64 = 500.0;
-        if typing.left {
+        if input.left {
             pos.x -= SPEED * prev_frame;
         }
-        if typing.right {
+        if input.right {
             pos.x += SPEED * prev_frame;
         }
-        if typing.up {
+        if input.up {
             pos.y -= SPEED * prev_frame;
         }
-        if typing.down {
+        if input.down {
             pos.y += SPEED * prev_frame;
         }
-        cam.set_offset(pos);
+        if input.debug_1 {
+            palette = Color::RGBA(255, 0, 255, 40);
+        }
+        if input.debug_2 {
+            palette = Color::RGBA(0, 255, 255, 40);
+        }
+        if input.debug_3 {
+            palette = Color::RGBA(255, 255, 0, 40);
+        }
+        if input.a {
+            palette = Color::RGBA(255, 0, 0, 40);
+        }
+        
+        cam.set_offset(pos);        
         
         prev_frame = start_time.elapsed().as_secs_f64();
 
