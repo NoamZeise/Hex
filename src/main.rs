@@ -1,4 +1,3 @@
-
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -7,11 +6,20 @@ use sdl2::video::Window;
 use sdl2::render::Canvas;
 
 use geometry::Vec2;
-use GudevJam12::{TextureManager, FontManager, map, camera::Camera};
-use GudevJam12::input::Input;
+use gudevJam12::{
+    TextureManager,
+    FontManager,
+    map,
+    camera::Camera,
+    input::Input,
+    hex::HexGrid,
+};
 
 use std::time::Instant;
 use std::path::Path;
+
+const TARGET_WIDTH : f64 = 240.0;
+const TARGET_HEIGHT : f64 = 160.0;
 
 pub fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
@@ -19,8 +27,8 @@ pub fn main() -> Result<(), String> {
     let _image_context = image::init(image::InitFlag::PNG);
 
     let mut cam = Camera::new(
-        geometry::Rect::new(0.0, 0.0, 240.0, 160.0),
-        geometry::Vec2::new(240.0 * 5.0, 160.0 * 5.0)
+        geometry::Rect::new(0.0, 0.0, TARGET_WIDTH, TARGET_HEIGHT),
+        geometry::Vec2::new(TARGET_WIDTH * 4.0, TARGET_HEIGHT * 4.0)
     );
     
     let window = video_subsystem
@@ -48,11 +56,11 @@ pub fn main() -> Result<(), String> {
 
     let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
 
-    let test = GudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/test.png"))?);
+    let test = gudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/test.png"))?);
 
-    let mut hex = GudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/hexagon.png"))?);
+    let mut hex_grid = HexGrid::new(&mut texture_manager)?;
     
-    canvas.set_blend_mode(sdl2::render::BlendMode::Mul);
+    canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
 
     let mut palette = Color::RGBA(0, 0, 0, 0);
 
@@ -75,17 +83,11 @@ pub fn main() -> Result<(), String> {
         
         //map.draw(&mut cam);
         
-        font_manager.draw(&mut canvas, &mono_font, "deeper and deeper", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
+        //font_manager.draw(&mut canvas, &mono_font, "deeper and deeper", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
 
         cam.add_cam_space(&test);
-
-
-        hex.rect.x = 100.0;
-        hex.rect.y = 100.0;
-        cam.add_cam_space(&hex);
-        hex.rect.x = 100.0 + 23.0;
-        hex.rect.y = 100.0  + 15.0;
-        cam.add_cam_space(&hex);
+        
+        hex_grid.draw(&mut cam);
         
         for d in cam.drain_draws() {
             texture_manager.draw(&mut canvas, d)?;
@@ -112,16 +114,16 @@ pub fn main() -> Result<(), String> {
             pos.y += SPEED * prev_frame;
         }
         if input.debug_1 {
-            palette = Color::RGBA(255, 0, 255, 40);
+            palette = Color::RGBA(255, 0, 255, 60);
         }
         if input.debug_2 {
-            palette = Color::RGBA(0, 255, 255, 40);
+            palette = Color::RGBA(0, 255, 255, 60);
         }
         if input.debug_3 {
-            palette = Color::RGBA(255, 255, 0, 40);
+            palette = Color::RGBA(255, 255, 0, 60);
         }
         if input.a {
-            palette = Color::RGBA(255, 0, 0, 40);
+            palette = Color::RGBA(255, 0, 0, 60);
         }
         
         cam.set_offset(pos);        

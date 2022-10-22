@@ -13,6 +13,7 @@ pub mod input;
 use geometry::*;
 pub mod map;
 pub mod camera;
+pub mod hex;
 
 trait RectConversion {
     fn new_from_sdl_rect(sdl_rect : &sdl2::rect::Rect) -> Self;
