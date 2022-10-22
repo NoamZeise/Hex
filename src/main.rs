@@ -49,6 +49,8 @@ pub fn main() -> Result<(), String> {
     let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
 
     let test = GudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/test.png"))?);
+
+    let mut hex = GudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/hexagon.png"))?);
     
     canvas.set_blend_mode(sdl2::render::BlendMode::Mul);
 
@@ -76,6 +78,14 @@ pub fn main() -> Result<(), String> {
         font_manager.draw(&mut canvas, &mono_font, "deeper and deeper", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
 
         cam.add_cam_space(&test);
+
+
+        hex.rect.x = 100.0;
+        hex.rect.y = 100.0;
+        cam.add_cam_space(&hex);
+        hex.rect.x = 100.0 + 23.0;
+        hex.rect.y = 100.0  + 15.0;
+        cam.add_cam_space(&hex);
         
         for d in cam.drain_draws() {
             texture_manager.draw(&mut canvas, d)?;
