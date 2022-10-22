@@ -88,11 +88,11 @@ impl Colour {
 
 #[derive(Clone, Copy)]
 pub struct GameObject {
-    texture: resource::Texture,
+    pub texture: resource::Texture,
     pub rect: Rect,
     tex_rect: Rect,
     parallax: Vec2,
-    colour: Colour
+    pub colour: Colour
 }
 
 impl GameObject {

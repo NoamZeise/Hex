@@ -101,7 +101,7 @@ pub fn main() -> Result<(), String> {
         
         let mut pos = cam.get_offset();
         const SPEED : f64 = 500.0;
-        if input.left {
+        /*if input.left {
             pos.x -= SPEED * prev_frame;
         }
         if input.right {
@@ -112,7 +112,7 @@ pub fn main() -> Result<(), String> {
         }
         if input.down {
             pos.y += SPEED * prev_frame;
-        }
+        }*/
         if input.debug_1 {
             palette = Color::RGBA(255, 0, 255, 60);
         }
@@ -122,9 +122,11 @@ pub fn main() -> Result<(), String> {
         if input.debug_3 {
             palette = Color::RGBA(255, 255, 0, 60);
         }
-        if input.a {
-            palette = Color::RGBA(255, 0, 0, 60);
-        }
+        //if input.a {
+        //    palette = Color::RGBA(255, 0, 0, 60);
+        //}
+
+        hex_grid.update(&prev_frame, &input);
         
         cam.set_offset(pos);        
         
