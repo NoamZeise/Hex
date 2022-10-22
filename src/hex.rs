@@ -1,7 +1,7 @@
 use crate::{GameObject, camera::Camera, TextureManager, resource};
 use geometry::*;
-use::std::path::Path;
-
+use std::path::Path;
+use std::f64::consts;
 
 const fn board_size(r: usize) -> usize {
     let mut sum = 0;
@@ -23,9 +23,14 @@ fn board_pos(x: usize, y: usize) -> Vec2 {
     let mut pos = Vec2::new(BOARD_CENTER.x - HEX.w / 2.0, BOARD_CENTER.y - HEX.h / 2.0);
     let rad = 6_i32.pow(y as u32);
 
-    let x_circ = x as f64 / y as f64;
-    let change_pos = Vec2::new(); 
-    let y_across : i32 = 0;
+    let angle = (((x as f64 / y as f64) - 3.0) / 3.0) * consts::PI;
+
+    let dir = Vec2::new(angle.cos() * y as f64, angle.sin() * y as f64);
+
+
+    pos.x += dir.x * HEX.x;
+    pos.y += dir.y * HEX.h;
+
     Vec2::new(pos.x, pos.y)
 }
 
