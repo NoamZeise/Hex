@@ -9,6 +9,7 @@ edition = "2021"
 quick-xml = "0.24.0"
 tiled = { path = "include/tiled/" }
 geometry = { path = "include/geometry/" }
+rand = "0.8.5"
 
 [dependencies.sdl2]
 version = "0.35"

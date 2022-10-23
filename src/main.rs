@@ -56,7 +56,7 @@ pub fn main() -> Result<(), String> {
 
     let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
 
-    let test = gudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/test.png"))?);
+    let test = gudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/bg.png"))?);
 
     let mut hex_grid = HexGrid::new(&mut texture_manager)?;
     
@@ -114,13 +114,13 @@ pub fn main() -> Result<(), String> {
             pos.y += SPEED * prev_frame;
         }*/
         if input.debug_1 {
-            palette = Color::RGBA(255, 0, 255, 60);
+            palette = Color::RGBA(255, 0, 255, 10);
         }
         if input.debug_2 {
-            palette = Color::RGBA(0, 255, 255, 60);
+            palette = Color::RGBA(0, 255, 255, 10);
         }
         if input.debug_3 {
-            palette = Color::RGBA(255, 255, 0, 60);
+            palette = Color::RGBA(255, 255, 0, 10);
         }
         //if input.a {
         //    palette = Color::RGBA(255, 0, 0, 60);

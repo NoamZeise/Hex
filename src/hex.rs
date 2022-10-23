@@ -6,6 +6,9 @@ use std::path::Path;
 use std::f64::consts;
 use std::collections::HashMap;
 
+use rand::Rng;
+
+
 const fn board_size(r: usize) -> usize {
     let mut sum = 1;
     let mut i = 0;
@@ -18,7 +21,7 @@ const fn board_size(r: usize) -> usize {
 
 const HEX: Rect = Rect{x: 11.0, y: 14.0, w: 16.0, h: 16.0};
 const BOARD_CENTER: Vec2 = Vec2{x: 120.0, y: 80.0};
-const BOARD_RADIUS : usize = 5;
+const BOARD_RADIUS : usize = 6;
 const BOARD_SIZE : usize = board_size(BOARD_RADIUS);
 const HL_SWAP : f64 = 0.4;
 
@@ -36,11 +39,8 @@ fn board_pos(x: usize, y: usize) -> Vec2 {
         0.0
     };
     
-    
-    let lim = consts::FRAC_PI_6 * 5.0 + consts::FRAC_PI_2;
     let dir = Vec2::new(angle.cos(), angle.sin());
 
-    //println!("angle: {}   x vec: {}  y vec: {}", angle, dir.x, dir.y);
     let mut x_diff = (dir.x * (HEX.x) * (y as f64)).round();
     if x_diff < 0.0 {
         x_diff = (x_diff / (HEX.x)).floor() * (HEX.x);
@@ -48,20 +48,26 @@ fn board_pos(x: usize, y: usize) -> Vec2 {
         x_diff = (x_diff / (HEX.x)).ceil() * (HEX.x);
     }
 
-    let mut y_diff = (dir.y * (HEX.y) * (y as f64)).round();
+    let mut y_diff = ((dir.y) * (HEX.y) * (y as f64)).round();
     if y_diff < 0.0 {
         y_diff = (y_diff / (HEX.y / 2.0)).ceil() * (HEX.y / 2.0);
     } else {
         y_diff = (y_diff / (HEX.y / 2.0)).floor() * (HEX.y / 2.0);
     }
 
+    if y == 5 {
+        //im ashamed
+        match x {
+            2 | 3 | 27 | 28 => y_diff += HEX.y / 2.0,
+
+            12 | 13 | 17 | 18 => y_diff -= HEX.y / 2.0,
+
+            _ => (),
+        }
+    }
 
     pos.x += x_diff;
     pos.y += y_diff;
-
-    
-
-    //println!("{}   {}", pos.x, pos.y);
 
     Vec2::new(pos.x, pos.y)
 }
@@ -70,6 +76,8 @@ fn board_pos(x: usize, y: usize) -> Vec2 {
 struct Hex {
     pub tile: Tile,
     pub obj: GameObject,
+    pub rating: i32,
+    pub to_kill: bool,
 }
 
 impl Hex {
@@ -77,12 +85,16 @@ impl Hex {
         Hex {
             obj: GameObject::new_from_tex(resource::Texture { id: 0, width: 0, height: 0}),
             tile: Tile::Blank,
+            rating: 0,
+            to_kill: false,
         }
     }
     pub fn new(obj: GameObject) -> Hex {
         Hex{
             obj,
             tile: Tile::Blank,
+            rating: 0,
+            to_kill: false,
         }
     }
 }
@@ -95,6 +107,16 @@ enum Tile {
     Blank,
 }
 
+fn random_tile() -> Tile {
+    let x: usize = rand::thread_rng().gen_range(0..3);
+    match x {
+        0 => Tile::Green,
+        1 => Tile::Red,
+        2 => Tile::Blue,
+        _ => Tile::Blank,
+    }
+}
+
 pub struct HexGrid {
     grid : [Hex; BOARD_SIZE],
     tiles: HashMap<Tile, Texture>,
@@ -103,6 +125,14 @@ pub struct HexGrid {
     hl_timer: f64,
     hl_active: usize,
     prev_input: Input,
+
+    drop_delay: f64,
+    drop_timer: f64,
+    
+    spawn_timer: f64,
+    spawn_delay: f64,
+
+    score: f64,
 }
 
 impl HexGrid {
@@ -114,7 +144,6 @@ impl HexGrid {
         tiles.insert(Tile::Blue, tm.load(Path::new("textures/tile/blue.png"))?);
         
         let obj = GameObject::new_from_tex(tm.load(Path::new("textures/tile/blue.png"))?);
-        let mut mid_tex = GameObject::new_from_tex(tm.load(Path::new("textures/mid.png"))?);
         
         let mut grid = [Hex::blank();BOARD_SIZE];
         let mut off = BOARD_CENTER;
@@ -130,15 +159,14 @@ impl HexGrid {
                 let pos = board_pos(x, y);
                 obj.rect.x = pos.x;
                 obj.rect.y = pos.y;
-                if y == 0 && x == 0 {
-                    mid_tex.rect.x = obj.rect.x - ((mid_tex.rect.w - obj.rect.w)/2.0);
-                    mid_tex.rect.y = obj.rect.y - ((mid_tex.rect.h - obj.rect.h)/2.0);
-                }
                 grid[x_total + x] = Hex::new(obj);
-                if x == 0 {
-                    grid[x_total + x].tile = Tile::Blue;
-                }
+                //if x == 0 {
+                //    grid[x_total + x].tile = Tile::Blue;
+                //}
                 grid[x_total + x].obj.texture = tiles[&grid[x_total + x].tile];
+                if x_total + x == 0 {
+                    grid[0].obj.texture = tm.load(Path::new("textures/tile/mid.png"))?;
+                }
             }
             off.y += obj.rect.h - 1.0;
             x_total += x_size;
@@ -149,10 +177,15 @@ impl HexGrid {
             tiles,
             hl: [GameObject::new_from_tex(tm.load(Path::new("textures/hl1.png"))?),
                  GameObject::new_from_tex(tm.load(Path::new("textures/hl2.png"))?)],
-            hl_y: 0,
+            hl_y: 1,
             hl_timer: 0.0,
             hl_active: 0,
             prev_input: Input::new(),
+            drop_delay: 3.0,
+            drop_timer: 0.0,
+            spawn_timer: 0.0,
+            spawn_delay: 12.0,
+            score: 0.0,
         })
     }
 
@@ -167,19 +200,19 @@ impl HexGrid {
         }
     }
     
-    fn get_index(x: usize, y: usize) -> usize {
+    fn get_index(mut x: usize, y: usize) -> usize {
         let off = if y == 0 {
-            0
+            return 0;
         } else {
             board_size(y)
         };
+        x = x % get_y_size(y);
         off + x
     }
 
     pub fn update(&mut self, timer: &f64, input: &Input) {
         self.input_handle(input);
-        //self.grid[Self::get_index(0, 1)].obj.colour = Colour::new(10, 0, 255, 255);
- 
+        self.game_logic(*timer);
         self.hl_timer += timer;
         if self.hl_timer > HL_SWAP {
             self.hl_timer = 0.0;
@@ -192,7 +225,7 @@ impl HexGrid {
     }
 
     fn get_tile(&self, x: usize, y: usize) -> Tile {
-        self.grid[Self::get_index(x, self.hl_y)].tile
+        self.grid[Self::get_index(x, y)].tile
     }
 
     fn change_tile(&mut self, x: usize, y: usize, tile: Tile) {
@@ -203,15 +236,15 @@ impl HexGrid {
 
     fn ring_shift(&mut self, dir: i32) {
         if dir.signum() == 1 {
-        let mut last = self.grid[Self::get_index(self.y_ring() - 1, self.hl_y)].tile;
-        let mut i = 0;
-        while i < self.y_ring() {
-            let tmp = self.get_tile(i, self.hl_y);
-            self.change_tile(i, self.hl_y, last);
-            last = tmp;
-
-            i+=1;
-        }
+            let mut last = self.grid[Self::get_index(self.y_ring() - 1, self.hl_y)].tile;
+            let mut i = 0;
+            while i < self.y_ring() {
+                let tmp = self.get_tile(i, self.hl_y);
+                self.change_tile(i, self.hl_y, last);
+                last = tmp;
+                
+                i+=1;
+            }
         }
         else {
             let mut last = self.grid[Self::get_index(0, self.hl_y)].tile;
@@ -224,6 +257,22 @@ impl HexGrid {
                 i-=1;
             }
         }
+    }
+
+    fn move_ring(&mut self, y: usize, out: bool) {
+        if (out && y == BOARD_RADIUS - 1) || (!out && y == 1) { return; }
+        let mut i = 0;
+        while i < get_y_size(y) {
+            let change_x = if out { i + (i / y) } else { i - (i / y) };
+            let change_y = if out { y + 1} else { y - 1};
+            if self.get_tile(i, y) != Tile::Blank &&
+               self.get_tile(change_x, change_y) == Tile::Blank{
+                self.change_tile(change_x, change_y, self.get_tile(i, y));
+                self.change_tile(i, y, Tile::Blank);
+            }
+            
+            i+=1;
+        };
     }
     
     fn input_handle(&mut self, input: &Input) {
@@ -248,7 +297,52 @@ impl HexGrid {
             self.ring_shift(-1);
         }
 
+        if input.a && !self.prev_input.a {
+            self.move_ring(self.hl_y, true);
+        }
+         if input.b && !self.prev_input.b {
+            self.move_ring(self.hl_y, false);
+        }
+
         self.prev_input = *input;
+    }
+
+    fn spawn_ring(&mut self) {
+        for x in 0..6 {
+            self.change_tile(x, 1, random_tile());
+        }
+    }
+
+    fn clear_lines(&mut self) {
+        for y in 0..BOARD_RADIUS {
+            for x in 0..get_y_size(y) {
+                let t = self.get_tile(x, y);
+                if t != Tile::Blank {
+                    
+                }
+            }
+        }
+    }
+
+    fn game_logic(&mut self, t: f64) {
+
+        self.drop_timer += t;
+        if self.drop_timer > self.drop_delay {
+            self.drop_timer = 0.0;
+            let mut y = BOARD_RADIUS;
+            while y > 1 {
+                self.move_ring(y - 1, true);
+                y -= 1;
+            }
+        }
+
+        self.spawn_timer += t;
+        if self.spawn_timer > self.spawn_delay {
+            self.spawn_timer = 0.0;
+            self.spawn_ring();
+        }
+
+        self.clear_lines();
     }
 
 }
