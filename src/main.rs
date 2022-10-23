@@ -34,7 +34,7 @@ pub fn main() -> Result<(), String> {
     
     let window = video_subsystem
         .window(
-            "Deeper and Deeper",
+            "Hex",
             cam.get_window_size().x as u32,
             cam.get_window_size().y as u32
         )
@@ -95,7 +95,7 @@ pub fn main() -> Result<(), String> {
 
         let cam_x = cam.get_window_size().x / cam.get_view_size().x;
         font_manager.draw(&mut canvas, &mono_font, &format!("score: {}", hex_grid.score()), (7.0*cam_x) as u32, Vec2::new(15.0*cam_x, 10.0*cam_x), Color::RGB(178, 178, 178))?;
-        font_manager.draw(&mut canvas, &mono_font, &format!("highscore: {}", hex_grid.score()), (7.0*cam_x) as u32, Vec2::new(4.0*cam_x, 18.0*cam_x), Color::RGB(178, 178, 178))?;
+        font_manager.draw(&mut canvas, &mono_font, &format!("highscore: {}", highscore), (7.0*cam_x) as u32, Vec2::new(4.0*cam_x, 18.0*cam_x), Color::RGB(178, 178, 178))?;
 
         canvas.set_draw_color(Color::RGB(32, 31, 46));
         let width = 20;
