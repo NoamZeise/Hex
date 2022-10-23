@@ -110,15 +110,17 @@ enum Tile {
     Red,
     Green,
     Blue,
+    Yellow,
     Blank,
 }
 
 fn random_tile() -> Tile {
-    let x: usize = rand::thread_rng().gen_range(0..3);
+    let x: usize = rand::thread_rng().gen_range(0..4);
     match x {
         0 => Tile::Green,
         1 => Tile::Red,
         2 => Tile::Blue,
+        3 => Tile::Yellow,
         _ => Tile::Blank,
     }
 }
@@ -140,6 +142,7 @@ pub struct HexGrid {
 
     score: usize,
     black_hex: Texture,
+    white_hex: Texture,
     lost: bool,
 }
 
@@ -150,9 +153,11 @@ impl HexGrid {
         tiles.insert(Tile::Red, tm.load(Path::new("textures/tile/red.png"))?);
         tiles.insert(Tile::Green, tm.load(Path::new("textures/tile/green.png"))?);
         tiles.insert(Tile::Blue, tm.load(Path::new("textures/tile/blue.png"))?);
+        tiles.insert(Tile::Yellow, tm.load(Path::new("textures/tile/yellow.png"))?);
         
         let obj = GameObject::new_from_tex(tm.load(Path::new("textures/tile/blue.png"))?);
         let black_hex = tm.load(Path::new("textures/tile/mid.png"))?;
+        let white_hex = tm.load(Path::new("textures/tile/white.png"))?;
         let mut grid = [Hex::blank();BOARD_SIZE];
         let mut off = BOARD_CENTER;
         let mut x_total = 0;
@@ -191,10 +196,11 @@ impl HexGrid {
             prev_input: Input::new(),
             drop_delay: INITIAL_FALL_DELAY,
             drop_timer: 0.0,
-            spawn_timer: 0.0,
+            spawn_timer: INITIAL_SPAWN_DELAY / 2.0,
             spawn_delay: INITIAL_SPAWN_DELAY,
             score: 0,
             black_hex,
+            white_hex,
             lost: false,
         })
     }
@@ -269,20 +275,23 @@ impl HexGrid {
         }
     }
 
-    fn move_ring(&mut self, y: usize, out: bool) {
-        if (out && y == BOARD_RADIUS - 1) || (!out && y == 1) { return; }
+    fn move_ring(&mut self, y: usize, out: bool) -> bool {
+        let mut moved = false;
+        if (out && y == BOARD_RADIUS - 1) || (!out && y == 1) { return moved; }
         let mut i = 0;
         while i < get_y_size(y) {
             let change_x = if out { i + (i / y) } else { i - (i / y) };
             let change_y = if out { y + 1} else { y - 1};
             if self.get_tile(i, y) != Tile::Blank &&
-               self.get_tile(change_x, change_y) == Tile::Blank{
+                self.get_tile(change_x, change_y) == Tile::Blank{
+                    moved = true;
                 self.change_tile(change_x, change_y, self.get_tile(i, y));
                 self.change_tile(i, y, Tile::Blank);
             }
             
             i+=1;
         };
+        moved
     }
     
     fn input_handle(&mut self, input: &Input) {
@@ -309,19 +318,33 @@ impl HexGrid {
 
         if input.a && !self.prev_input.a {
             //self.move_ring(self.hl_y, true);
-            self.spawn_timer = self.spawn_delay;
+            self.drop_timer = self.drop_delay;
         }
          if input.b && !self.prev_input.b {
              //self.move_ring(self.hl_y, false);
-             self.drop_timer = self.drop_delay;
+         }
+
+         if input.debug_1 && !self.prev_input.debug_1 {
+             self.score += 10;
         }
 
         self.prev_input = *input;
     }
 
     fn spawn_ring(&mut self) {
+        let mut prev = Tile::Blank;
         for x in 0..6 {
-            self.change_tile(x, 1, random_tile());
+            if self.get_tile(x, 1) != Tile::Blank {
+                self.lost = true;
+                self.grid[Self::get_index(x, 1)].obj.texture = self.white_hex;
+            }  else {
+                let mut tile = random_tile();
+                if tile == prev {
+                    tile = random_tile();
+                }
+                self.change_tile(x, 1, tile);
+                prev = tile;
+            }
         }
     }
 
@@ -430,21 +453,24 @@ impl HexGrid {
     }
 
     fn game_logic(&mut self, t: f64) {
-
         self.drop_timer += t;
         if self.drop_timer > self.drop_delay {
+            self.drop_delay = INITIAL_FALL_DELAY - (self.score as f64 / 60.0).powf(0.5);
             self.drop_timer = 0.0;
             let mut y = BOARD_RADIUS;
+            let mut moved = false;
             while y > 1 {
-                self.move_ring(y - 1, true);
+                moved |= self.move_ring(y - 1, true);
                 y -= 1;
             }
-        }
-
-        self.spawn_timer += t;
-        if self.spawn_timer > self.spawn_delay {
-            self.spawn_timer = 0.0;
-            self.spawn_ring();
+            let mut i = 1;
+            while i < self.grid.len() {
+                self.grid[i].obj.texture = self.tiles[&self.grid[i].tile];
+                i += 1;
+            }
+            if !moved {
+                self.spawn_ring();
+            } 
         }
 
         self.clear_lines();
@@ -459,17 +485,18 @@ impl HexGrid {
     }
 
     pub fn reset(&mut self) {
+        self.spawn_timer = INITIAL_SPAWN_DELAY / 2.0;
         self.spawn_delay = INITIAL_SPAWN_DELAY;
         self.drop_delay = INITIAL_FALL_DELAY;
         self.score = 0;
         self.lost = false;
         self.hl_y = 1;
-        self.iter_grid(|s: &mut Self, x: usize, y: usize, t: Tile| {
+        self.iter_grid(|s: &mut Self, x: usize, y: usize, _: Tile| {
             s.change_tile(x, y, Tile::Blank);
         });
     }
 
     pub fn spawn_ratio(&self) -> f64 {
-        self.spawn_delay as f64/ self.spawn_timer as f64
+        self.drop_delay as f64/ self.drop_timer as f64
     }
 }

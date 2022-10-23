@@ -1,3 +1,4 @@
+
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
@@ -54,18 +55,20 @@ pub fn main() -> Result<(), String> {
 
     let mono_font = font_manager.load_font(Path::new("textures/VT323-Regular.ttf"))?;
 
-    let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
-
     let test = gudevJam12::GameObject::new_from_tex(texture_manager.load(Path::new("textures/bg.png"))?);
 
     let mut hex_grid = HexGrid::new(&mut texture_manager)?;
     
-    canvas.set_blend_mode(sdl2::render::BlendMode::Blend);
+    canvas.set_blend_mode(sdl2::render::BlendMode::Mul);
 
     let mut palette = Color::RGBA(0, 0, 0, 0);
 
+    let mut highscore = 0;
+    let mut new_hs = false;
+
     let mut event_pump = sdl_context.event_pump()?;
     let mut input = Input::new();
+    let mut p_inp = input;
     let mut prev_frame : f64 = 0.0;
     'running: loop {
         let start_time = Instant::now();
@@ -91,54 +94,96 @@ pub fn main() -> Result<(), String> {
         }
 
         let cam_x = cam.get_window_size().x / cam.get_view_size().x;
-        font_manager.draw(&mut canvas, &mono_font, &format!("score: {}", hex_grid.score()), (10.0*cam_x) as u32, Vec2::new(10.0*cam_x, 10.0*cam_x), Color::BLACK)?;
-        
+        font_manager.draw(&mut canvas, &mono_font, &format!("score: {}", hex_grid.score()), (7.0*cam_x) as u32, Vec2::new(15.0*cam_x, 10.0*cam_x), Color::RGB(178, 178, 178))?;
+        font_manager.draw(&mut canvas, &mono_font, &format!("highscore: {}", hex_grid.score()), (7.0*cam_x) as u32, Vec2::new(4.0*cam_x, 18.0*cam_x), Color::RGB(178, 178, 178))?;
 
+        canvas.set_draw_color(Color::RGB(32, 31, 46));
+        let width = 20;
+        let height = (cam.get_window_size().y / hex_grid.spawn_ratio())as u32;
+        canvas.fill_rect(sdl2::rect::Rect::new(cam.get_window_size().x as i32 - width, (cam.get_window_size().y - height as f64) as i32,
+                                               width as u32, height))?;
+                                               
+        
         canvas.set_draw_color(palette);
-        canvas.fill_rect(sdl2::rect::Rect::new(0, 0, cam.get_window_size().x as u32, cam.get_window_size().y as u32))?;
-      
-        
-        canvas.present();
-        
-        let mut pos = cam.get_offset();
-        const SPEED : f64 = 500.0;
-        /*if input.left {
-            pos.x -= SPEED * prev_frame;
-        }
-        if input.right {
-            pos.x += SPEED * prev_frame;
-        }
-        if input.up {
-            pos.y -= SPEED * prev_frame;
-        }
-        if input.down {
-            pos.y += SPEED * prev_frame;
-        }*/
-        if input.debug_1 {
-            hex_grid.reset();
-           // palette = Color::RGBA(255, 0, 255, 10);
-        }
-        if input.debug_2 {
-            palette = Color::RGBA(0, 255, 255, 10);
-        }
-        if input.debug_3 {
-            palette = Color::RGBA(255, 255, 0, 10);
-        }
-        //if input.a {
-        //    palette = Color::RGBA(255, 0, 0, 60);
-        //}
-
-        hex_grid.update(&prev_frame, &input);
 
         if hex_grid.lost() {
             
-
+            canvas.set_draw_color(Color::RGBA(10, 10, 10, 200));
         }
         
-        cam.set_offset(pos);        
+        canvas.fill_rect(sdl2::rect::Rect::new(0, 0, cam.get_window_size().x as u32, cam.get_window_size().y as u32))?;
+
+        if hex_grid.lost() {
+            font_manager.draw(&mut canvas, &mono_font, "GAME OVER",
+                              (40.0*cam_x) as u32,
+                              Vec2::new(45.0*cam_x, 30.0*cam_x),
+                              Color::RGB(200, 200, 200))?;
+
+            font_manager.draw(&mut canvas, &mono_font, &format!("FINAL SCORE: {}", hex_grid.score()),
+                              (20.0*cam_x) as u32,
+                              Vec2::new(57.0*cam_x, 67.0*cam_x),
+                              Color::RGB(200, 200, 200))?;
+
+            if new_hs {
+                 font_manager.draw(&mut canvas, &mono_font, "NEW HIGH SCORE!",
+                              (15.0*cam_x) as u32,
+                              Vec2::new(78.0*cam_x, 110.0*cam_x),
+                              Color::RGB(200, 200, 200))?;
+
+            }
+
+             font_manager.draw(&mut canvas, &mono_font, "Z TO RETRY",
+                              (10.0*cam_x) as u32,
+                              Vec2::new(100.0*cam_x, 130.0*cam_x),
+                              Color::RGB(200, 200, 200))?;
+            
+        }
+        
+        canvas.present(); 
+
+        if hex_grid.score() < 30 {
+            palette = Color::RGBA(255, 255, 255, 255);
+        } else if hex_grid.score() < 70 {
+            palette = Color::RGBA(150, 100, 220, 160);
+        } else if hex_grid.score() < 120 {
+            palette = Color::RGBA(255, 100, 0, 160);
+        } else if hex_grid.score() < 160 {
+            palette = Color::RGBA(155, 255, 100, 170);
+        } else if hex_grid.score() < 210 {
+            palette = Color::RGBA(100, 200, 255, 200);
+        } else if hex_grid.score() < 260 {
+            palette = Color::RGBA(255, 255, 100, 160);
+        } else if hex_grid.score() < 300 {
+            palette = Color::RGBA(200, 170, 255, 100);
+        } else if hex_grid.score() < 300 {
+            palette = Color::RGBA(255, 90, 100, 150);
+        } else if hex_grid.score() < 350 {
+            palette = Color::RGBA(200, 90, 200, 200)
+        } else if hex_grid.score() < 400 {
+            palette = Color::RGBA(255, 90, 60, 230);
+        } else if hex_grid.score() < 450 {
+            palette = Color::RGBA(255, 90, 60, 240);
+        } else if hex_grid.score() < 500 {
+            palette = Color::RGBA(255, 40, 40, 250);
+        }
+        
+        if hex_grid.score() > highscore {
+            highscore = hex_grid.score();
+            new_hs = true;
+        }
+        
+        if hex_grid.lost() {
+            if input.a && !p_inp.a{
+                hex_grid.reset();
+                new_hs = false;
+            }
+        } else {
+            hex_grid.update(&prev_frame, &input);
+        }
+              
         
         prev_frame = start_time.elapsed().as_secs_f64();
-
+        p_inp = input;
         //println!("prev frame: {} fps", 1.0/prev_frame);
     }
 
