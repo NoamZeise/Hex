@@ -52,7 +52,7 @@ pub fn main() -> Result<(), String> {
     let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let mut font_manager = FontManager::new(&ttf_context, &texture_creator)?;
 
-    let mono_font = font_manager.load_font(Path::new("textures/FiraCode-Regular.ttf"))?;
+    let mono_font = font_manager.load_font(Path::new("textures/VT323-Regular.ttf"))?;
 
     let mut map = map::Map::new("test-resources/test.tmx", &mut texture_manager).unwrap();
 
@@ -82,9 +82,6 @@ pub fn main() -> Result<(), String> {
         canvas.clear();
         
         //map.draw(&mut cam);
-        
-        //font_manager.draw(&mut canvas, &mono_font, "deeper and deeper", 100, Vec2::new(10.0, 10.0), Color::WHITE)?;
-
         cam.add_cam_space(&test);
         
         hex_grid.draw(&mut cam);
@@ -92,6 +89,10 @@ pub fn main() -> Result<(), String> {
         for d in cam.drain_draws() {
             texture_manager.draw(&mut canvas, d)?;
         }
+
+        let cam_x = cam.get_window_size().x / cam.get_view_size().x;
+        font_manager.draw(&mut canvas, &mono_font, &format!("score: {}", hex_grid.score()), (10.0*cam_x) as u32, Vec2::new(10.0*cam_x, 10.0*cam_x), Color::BLACK)?;
+        
 
         canvas.set_draw_color(palette);
         canvas.fill_rect(sdl2::rect::Rect::new(0, 0, cam.get_window_size().x as u32, cam.get_window_size().y as u32))?;
@@ -114,7 +115,8 @@ pub fn main() -> Result<(), String> {
             pos.y += SPEED * prev_frame;
         }*/
         if input.debug_1 {
-            palette = Color::RGBA(255, 0, 255, 10);
+            hex_grid.reset();
+           // palette = Color::RGBA(255, 0, 255, 10);
         }
         if input.debug_2 {
             palette = Color::RGBA(0, 255, 255, 10);
@@ -127,6 +129,11 @@ pub fn main() -> Result<(), String> {
         //}
 
         hex_grid.update(&prev_frame, &input);
+
+        if hex_grid.lost() {
+            
+
+        }
         
         cam.set_offset(pos);        
         
@@ -150,8 +157,8 @@ fn handle_event(event: &Event, canvas: &mut Canvas<Window>, cam: &mut Camera) ->
                 cs.x *= 2.0;
                 cs.y *= 2.0;
             } else {
-                cs.x += cam.get_view_size().x/2.0;
-                cs.y += cam.get_view_size().y/2.0;
+                cs.x += cam.get_view_size().x;
+                cs.y += cam.get_view_size().y;
             }
             set_win_size(canvas, cam, cs)?;
         },
@@ -164,8 +171,8 @@ fn handle_event(event: &Event, canvas: &mut Canvas<Window>, cam: &mut Camera) ->
                 cs.x /= 2.0;
                 cs.y /= 2.0;
             } else {
-                cs.x -= cam.get_view_size().x/2.0;
-                cs.y -= cam.get_view_size().y/2.0;
+                cs.x -= cam.get_view_size().x;
+                cs.y -= cam.get_view_size().y;
             }
             set_win_size(canvas, cam, cs)?;
         },
