@@ -1,5 +1,5 @@
 # Hex
-game made in 48 hours for Gudev GameJam12
+game made for a jam in 48 hours
 
 * [itch page](https://noamzeise.itch.io/the-hex)
 
